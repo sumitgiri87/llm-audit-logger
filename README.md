@@ -7,7 +7,7 @@
 
 > Drop-in Python middleware that gives your LangChain agent a tamper-evident, compliance-ready audit trail in one import.
 
-> **Part of the [agentic-ai-security-audit-framework](https://github.com/sumitgiri/agentic-ai-security-audit-framework) — a structured methodology for auditing enterprise agentic AI deployments.**
+> **Part of the [agentic-ai-security-audit-framework](https://github.com/sumitgiri87/agentic-ai-security-audit-framework) — a structured methodology for auditing enterprise agentic AI deployments.**
 
 ---
 
@@ -144,6 +144,8 @@ Each agent run produces a newline-delimited JSON file (one event per line) named
 
 The `.jsonl` format is chosen deliberately: it is appendable, line-parseable, and ingestible directly by SIEM tools, S3-based log pipelines, and compliance evidence management systems without transformation.
 
+Every line additionally carries `prev_hash` and `record_hash`: each record hashes the previous one, forming a chain that makes silent edits, deletions, or reordering detectable with `verify_log()`. That is the tamper-evidence an auditor looks for; anchor the latest `record_hash` to immutable storage for a stronger guarantee.
+
 ---
 
 ## 5. This vs LangSmith
@@ -188,14 +190,16 @@ If your organisation is deploying agentic AI and is subject to either of these i
 Install from source while the package is in active development:
 
 ```bash
-git clone https://github.com/sumitgiri/llm-audit-logger
+git clone https://github.com/sumitgiri87/llm-audit-logger
 cd llm-audit-logger
 pip install -e .
 ```
 
 PyPI package will be published once the core handler and schema are stable — see [Current Status](#9-current-status).
 
-**Dependencies:** `langchain-core >= 0.1.0`, `pydantic >= 2.0`
+**Dependencies:** none for the core — it runs on the Python standard library
+alone. The LangChain callback handler needs `langchain-core >= 0.1.0`, installable
+via the `langchain` extra: `pip install -e ".[langchain]"`.
 
 No external services. No API keys. Logs write to local filesystem by default. S3 and GCS output adapters are planned.
 
@@ -203,11 +207,23 @@ No external services. No API keys. Logs write to local filesystem by default. S3
 
 ## 8. Repository Structure
 
-The library is being built handler-first — core callback integration before output adapters, local filesystem before cloud storage.
+```
+llm_audit_logger/
+  __init__.py     # public API
+  schema.py       # AuditEvent + EventType (stdlib dataclass, zero deps)
+  writer.py       # JSONL writer with tamper-evident hash chain + verify_log
+  handler.py      # AuditCallbackHandler (langchain-core imported lazily)
+examples/
+  basic_usage.py  # runnable offline demo (no LangChain, no API key)
+tests/
+  test_audit_logger.py
+pyproject.toml    # pip install -e .   (core has zero dependencies)
+```
 
-**Current:** `AuditCallbackHandler` core, JSONL writer, Pydantic schema v1.  
-**In progress:** LangGraph callback integration, examples.  
-**Planned:** S3 and GCS adapters, OSFI E-23 and EU AI Act field mapping documentation.
+**Runnable now:** the zero-dependency core (schema, JSONL writer, tamper-evident
+hash chain, `verify_log`), the LangChain `AuditCallbackHandler`, an offline
+example, and tests. **In progress:** LangGraph integration and the OSFI E-23 /
+EU AI Act field-mapping docs. **Planned:** S3 and GCS output adapters.
 
 ---
 
@@ -215,9 +231,10 @@ The library is being built handler-first — core callback integration before ou
 
 | Component | Status |
 |---|---|
-| `AuditCallbackHandler` core | 🔄 In progress |
-| JSONL file writer | 🔄 In progress |
-| Pydantic schema v1 | 🔄 In progress |
+| `AuditCallbackHandler` (LangChain) | ✅ Runnable |
+| JSONL file writer | ✅ Runnable |
+| Schema v1 (zero-dependency dataclass) | ✅ Runnable |
+| Tamper-evident hash chain + `verify_log` | ✅ Runnable |
 | LangGraph callback integration | 🔄 In progress |
 | S3 output adapter | 📅 Planned |
 | GCS output adapter | 📅 Planned |
@@ -230,8 +247,8 @@ The library is being built handler-first — core callback integration before ou
 
 | Repository | Description |
 |---|---|
-| [agentic-ai-security-audit-framework](https://github.com/sumitgiri/agentic-ai-security-audit-framework) | Flagship repo — full audit methodology, compliance mapper, evidence templates |
-| [agentic-rag-security-lab](https://github.com/sumitgiri/agentic-rag-security-lab) | Vulnerable-by-design RAG pipeline for attack research |
+| [agentic-ai-security-audit-framework](https://github.com/sumitgiri87/agentic-ai-security-audit-framework) | Flagship repo — full audit methodology, compliance mapper, evidence templates |
+| [agentic-rag-security-lab](https://github.com/sumitgiri87/agentic-rag-security-lab) | Vulnerable-by-design RAG pipeline for attack research |
 | agent-compliance-mapper | CLI tool for EU AI Act and OSFI E-23 gap analysis *(coming)* |
 | llm-audit-logger | **This repo** |
 
@@ -254,7 +271,7 @@ Toronto, Ontario, Canada
 
 AI red teaming at Mindrift. Cybersecurity consulting at CyStack. Building an independent AI agent security audit practice for Canadian regulated enterprises.
 
-[LinkedIn](https://linkedin.com/in/sumitgiri) · [GitHub](https://github.com/sumitgiri)
+[LinkedIn](https://linkedin.com/in/sumitgiri) · [GitHub](https://github.com/sumitgiri87)
 
 ---
 
